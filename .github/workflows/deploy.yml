@@ -17,10 +17,38 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
       - name: Build Backend Image
         run: |
           docker build -t sre-backend ./app/backend
 
+      - name: Tag Backend Image
+        run: |
+          docker tag sre-backend:latest 211125724309.dkr.ecr.us-east-1.amazonaws.com/sre-backend:latest
+
+      - name: Push Backend Image
+        run: |
+          docker push 211125724309.dkr.ecr.us-east-1.amazonaws.com/sre-backend:latest
+
       - name: Build Frontend Image
         run: |
           docker build -t sre-frontend ./app/frontend
+
+      - name: Tag Frontend Image
+        run: |
+          docker tag sre-frontend:latest 211125724309.dkr.ecr.us-east-1.amazonaws.com/sre-frontend:latest
+
+      - name: Push Frontend Image
+        run: |
+          docker push 211125724309.dkr.ecr.us-east-1.amazonaws.com/sre-frontend:latest
+          

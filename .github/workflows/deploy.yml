@@ -1,0 +1,26 @@
+name: Build and Push Docker Images
+
+on:
+  push:
+    branches:
+      - feature
+      - main
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Build Backend Image
+        run: |
+          docker build -t sre-backend ./app/backend
+
+      - name: Build Frontend Image
+        run: |
+          docker build -t sre-frontend ./app/frontend

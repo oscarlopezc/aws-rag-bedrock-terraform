@@ -1,0 +1,22 @@
+services:
+
+  backend:
+    build:
+      context: ./app/backend
+
+    container_name: sre-api
+
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build:
+      context: ./app/frontend
+
+    container_name: sre-web
+
+    ports:
+      - "80:80"
+
+    depends_on:
+      - backend

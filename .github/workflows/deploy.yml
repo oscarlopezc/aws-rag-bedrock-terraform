@@ -1,8 +1,4 @@
-
-name: Build, Push and Deploy
-
-name: Build and Deploy
-
+name: CI-CD Pipeline (Build, Push, Deploy)
 
 on:
   push:
@@ -11,13 +7,13 @@ on:
       - main
 
 jobs:
-
-# ================= CI =================
+  # ================= CI =================
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -26,8 +22,8 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-<<<<<<< HEAD
       - name: Login to Amazon ECR
+        id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
       # -------- BACKEND --------
@@ -35,81 +31,42 @@ jobs:
         run: docker build -t sre-backend ./app/backend
 
       - name: Tag Backend Image
-        run: docker tag sre-backend:latest ${{ secrets.ECR_BACKEND_URI }}:latest
+        run: docker tag sre-backend:latest 211125724309.dkr.ecr.us-east-1.amazonaws.com/sre-backend:latest
 
       - name: Push Backend Image
-        run: docker push ${{ secrets.ECR_BACKEND_URI }}:latest
+        run: docker push 211125724309.dkr.ecr.us-east-1.amazonaws.com/sre-backend:latest
 
       # -------- FRONTEND --------
       - name: Build Frontend Image
         run: docker build -t sre-frontend ./app/frontend
 
       - name: Tag Frontend Image
-        run: docker tag sre-frontend:latest ${{ secrets.ECR_FRONTEND_URI }}:latest
+        run: docker tag sre-frontend:latest 211125724309.dkr.ecr.us-east-1.amazonaws.com/sre-frontend:latest
 
       - name: Push Frontend Image
-        run: docker push ${{ secrets.ECR_FRONTEND_URI }}:latest
+        run: docker push 211125724309.dkr.ecr.us-east-1.amazonaws.com/sre-frontend:latest
 
-
-# ================= CD =================
+  # ================= CD =================
   deploy:
-    runs-on: ubuntu-latest
     needs: build
+    runs-on: ubuntu-latest
 
     steps:
-
       - name: Deploy to EC2 via SSH
-=======
-      - name: Login to ECR
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Build Backend
-        run: docker build -t sre-backend ./app/backend
-
-      - name: Push Backend
-        run: docker tag sre-backend:latest 211125724309.dkr.ecr.us-east-1.amazonaws.com/sre-backend:latest &&
-             docker push 211125724309.dkr.ecr.us-east-1.amazonaws.com/sre-backend:latest
-
-      - name: Build Frontend
-        run: docker build -t sre-frontend ./app/frontend
-
-      - name: Push Frontend
-        run: docker tag sre-frontend:latest 211125724309.dkr.ecr.us-east-1.amazonaws.com/sre-frontend:latest &&
-             docker push 211125724309.dkr.ecr.us-east-1.amazonaws.com/sre-frontend:latest
-
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Deploy to EC2
->>>>>>> af9eb37 (test pipeline)
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-<<<<<<< HEAD
-
             echo "Logging into ECR..."
-            aws ecr get-login-password --region ${{ secrets.AWS_REGION }} \
-            | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+            aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin 211125724309.dkr.ecr.us-east-1.amazonaws.com
 
             echo "Pulling latest images..."
-            docker compose pull
-
-            echo "Restarting services..."
-            docker compose up -d
-          
-=======
-            aws ecr get-login-password --region us-east-1 \
-            | docker login --username AWS --password-stdin 211125724309.dkr.ecr.us-east-1.amazonaws.com
-
             docker pull 211125724309.dkr.ecr.us-east-1.amazonaws.com/sre-backend:latest
             docker pull 211125724309.dkr.ecr.us-east-1.amazonaws.com/sre-frontend:latest
 
-            docker compose down || true
+            echo "Deploying with docker compose..."
+            cd /home/ubuntu/app
+            docker compose down
             docker compose up -d
->>>>>>> af9eb37 (test pipeline)

@@ -1,4 +1,8 @@
+
 name: Build, Push and Deploy
+
+name: Build and Deploy
+
 
 on:
   push:
@@ -13,9 +17,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -24,6 +26,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
+<<<<<<< HEAD
       - name: Login to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v2
 
@@ -56,12 +59,39 @@ jobs:
     steps:
 
       - name: Deploy to EC2 via SSH
+=======
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build Backend
+        run: docker build -t sre-backend ./app/backend
+
+      - name: Push Backend
+        run: docker tag sre-backend:latest 211125724309.dkr.ecr.us-east-1.amazonaws.com/sre-backend:latest &&
+             docker push 211125724309.dkr.ecr.us-east-1.amazonaws.com/sre-backend:latest
+
+      - name: Build Frontend
+        run: docker build -t sre-frontend ./app/frontend
+
+      - name: Push Frontend
+        run: docker tag sre-frontend:latest 211125724309.dkr.ecr.us-east-1.amazonaws.com/sre-frontend:latest &&
+             docker push 211125724309.dkr.ecr.us-east-1.amazonaws.com/sre-frontend:latest
+
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to EC2
+>>>>>>> af9eb37 (test pipeline)
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
+<<<<<<< HEAD
 
             echo "Logging into ECR..."
             aws ecr get-login-password --region ${{ secrets.AWS_REGION }} \
@@ -73,3 +103,13 @@ jobs:
             echo "Restarting services..."
             docker compose up -d
           
+=======
+            aws ecr get-login-password --region us-east-1 \
+            | docker login --username AWS --password-stdin 211125724309.dkr.ecr.us-east-1.amazonaws.com
+
+            docker pull 211125724309.dkr.ecr.us-east-1.amazonaws.com/sre-backend:latest
+            docker pull 211125724309.dkr.ecr.us-east-1.amazonaws.com/sre-frontend:latest
+
+            docker compose down || true
+            docker compose up -d
+>>>>>>> af9eb37 (test pipeline)

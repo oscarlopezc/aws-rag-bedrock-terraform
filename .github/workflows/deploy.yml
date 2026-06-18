@@ -46,13 +46,15 @@ jobs:
       - name: Push Frontend Image
         run: docker push 211125724309.dkr.ecr.us-east-1.amazonaws.com/sre-frontend:latest
 
-  # ================= CD =================
-  deploy:
+ # ================= CD DEV =================
+  deploy-dev:
+    if: github.ref == 'refs/heads/feature'
     needs: build
     runs-on: ubuntu-latest
+    environment: dev
 
     steps:
-      - name: Deploy to EC2 via SSH
+      - name: Deploy DEV to EC2 via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
@@ -66,7 +68,35 @@ jobs:
             docker pull 211125724309.dkr.ecr.us-east-1.amazonaws.com/sre-backend:latest
             docker pull 211125724309.dkr.ecr.us-east-1.amazonaws.com/sre-frontend:latest
 
-            echo "Deploying with docker compose..."
+            echo "Deploying DEV..."
+            cd /home/ubuntu/app
+            docker compose down
+            docker compose up -d
+
+
+# ================= CD PROD =================
+  deploy-prod:
+    if: github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Deploy PROD to EC2 via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            echo "Logging into ECR..."
+            aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin 211125724309.dkr.ecr.us-east-1.amazonaws.com
+
+            echo "Pulling latest images..."
+            docker pull 211125724309.dkr.ecr.us-east-1.amazonaws.com/sre-backend:latest
+            docker pull 211125724309.dkr.ecr.us-east-1.amazonaws.com/sre-frontend:latest
+
+            echo "Deploying PROD..."
             cd /home/ubuntu/app
             docker compose down
             docker compose up -d

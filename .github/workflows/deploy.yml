@@ -7,6 +7,7 @@ on:
       - main
 
 jobs:
+
   # ================= CI =================
   build:
     runs-on: ubuntu-latest
@@ -23,7 +24,6 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Login to Amazon ECR
-        id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
       # -------- BACKEND --------
@@ -46,7 +46,8 @@ jobs:
       - name: Push Frontend Image
         run: docker push 211125724309.dkr.ecr.us-east-1.amazonaws.com/sre-frontend:latest
 
- # ================= CD DEV =================
+
+  # ================= CD DEV =================
   deploy-dev:
     if: github.ref == 'refs/heads/feature'
     needs: build
@@ -54,27 +55,36 @@ jobs:
     environment: dev
 
     steps:
-      - name: Deploy DEV to EC2 via SSH
+      - name: Deploy DEV to EC2
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
+            set -e
+
             echo "Logging into ECR..."
-            aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin 211125724309.dkr.ecr.us-east-1.amazonaws.com
+            aws ecr get-login-password --region us-east-1 \
+              | docker login --username AWS --password-stdin 211125724309.dkr.ecr.us-east-1.amazonaws.com
 
-            echo "Pulling latest images..."
-            docker pull 211125724309.dkr.ecr.us-east-1.amazonaws.com/sre-backend:latest
-            docker pull 211125724309.dkr.ecr.us-east-1.amazonaws.com/sre-frontend:latest
+            echo "Checking Docker Compose..."
+            docker compose version
 
-            echo "Deploying DEV..."
+            mkdir -p /home/ubuntu/app
             cd /home/ubuntu/app
-            docker compose down
+
+            echo "Pulling images..."
+            docker compose pull
+
+            echo "Stopping containers..."
+            docker compose down || true
+
+            echo "Starting containers..."
             docker compose up -d
 
 
-# ================= CD PROD =================
+  # ================= CD PROD =================
   deploy-prod:
     if: github.ref == 'refs/heads/main'
     needs: build
@@ -82,21 +92,30 @@ jobs:
     environment: production
 
     steps:
-      - name: Deploy PROD to EC2 via SSH
+      - name: Deploy PROD to EC2
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
+            set -e
+
             echo "Logging into ECR..."
-            aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin 211125724309.dkr.ecr.us-east-1.amazonaws.com
+            aws ecr get-login-password --region us-east-1 \
+              | docker login --username AWS --password-stdin 211125724309.dkr.ecr.us-east-1.amazonaws.com
 
-            echo "Pulling latest images..."
-            docker pull 211125724309.dkr.ecr.us-east-1.amazonaws.com/sre-backend:latest
-            docker pull 211125724309.dkr.ecr.us-east-1.amazonaws.com/sre-frontend:latest
+            echo "Checking Docker Compose..."
+            docker compose version
 
-            echo "Deploying PROD..."
+            mkdir -p /home/ubuntu/app
             cd /home/ubuntu/app
-            docker compose down
+
+            echo "Pulling images..."
+            docker compose pull
+
+            echo "Stopping containers..."
+            docker compose down || true
+
+            echo "Starting containers..."
             docker compose up -d

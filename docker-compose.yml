@@ -1,22 +1,14 @@
 services:
-
   backend:
-    build:
-      context: ./app/backend
-
+    image: 211125724309.dkr.ecr.us-east-1.amazonaws.com/sre-backend:latest
     container_name: sre-api
-
     ports:
       - "8000:8000"
 
   frontend:
-    build:
-      context: ./app/frontend
-
+    image: 211125724309.dkr.ecr.us-east-1.amazonaws.com/sre-frontend:latest
     container_name: sre-web
-
     ports:
       - "80:80"
-
     depends_on:
       - backend

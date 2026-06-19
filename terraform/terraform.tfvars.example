@@ -1,0 +1,17 @@
+aws_region = "us-east-1"
+
+environment = "dev"
+
+project_name = "aws-rag-bedrock-terraform"
+
+context = "Actúa como experto..."
+
+knowledge_base_id = "REPLACE_WITH_KB_ID"
+
+model_id = "anthropic.claude-3-5-sonnet-20240620-v1:0"
+
+temperature = "0.5"
+
+pinecone_api_key = "YOUR_API_KEY"
+
+pinecone_host = "https://YOUR_INDEX.svc....pinecone.io"

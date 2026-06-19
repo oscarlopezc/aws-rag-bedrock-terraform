@@ -1,35 +1,72 @@
-###################################
-# EC2 PUBLIC IP
-###################################
+############################################
+# Lambda
+############################################
 
-output "ec2_public_ip" {
+output "lambda_name" {
+  description = "Lambda Function Name"
+  value       = aws_lambda_function.api.function_name
+}
 
-  description = "Public IP of EC2 instance"
+output "lambda_arn" {
+  description = "Lambda Function ARN"
+  value       = aws_lambda_function.api.arn
+}
 
-  value = aws_instance.docker_host.public_ip
+############################################
+# API Gateway
+############################################
+
+output "api_gateway_id" {
+  description = "API Gateway ID"
+  value       = aws_api_gateway_rest_api.rag_api.id
+}
+
+output "api_gateway_url" {
+  description = "Invoke URL"
+
+  value = "${aws_api_gateway_stage.dev.invoke_url}/chat"
+}
+
+############################################
+# CloudFront
+############################################
+
+output "cloudfront_domain" {
+  description = "CloudFront Domain Name"
+  value       = aws_cloudfront_distribution.frontend.domain_name
+}
+
+############################################
+# S3
+############################################
+
+output "frontend_bucket" {
+  description = "Frontend Bucket"
+  value       = aws_s3_bucket.frontend.bucket
+}
+
+output "datasource_bucket" {
+  description = "Knowledge Base Data Source Bucket"
+  value       = aws_s3_bucket.datasource.bucket
+}
+############################################
+# Bedrock Outputs
+############################################
+
+output "knowledge_base_id" {
+
+  value = awscc_bedrock_knowledge_base.knowledge_base.id
 
 }
 
-###################################
-# EC2 PUBLIC DNS
-###################################
+output "knowledge_base_arn" {
 
-output "ec2_public_dns" {
-
-  description = "Public DNS of EC2 instance"
-
-  value = aws_instance.docker_host.public_dns
+  value = awscc_bedrock_knowledge_base.knowledge_base.knowledge_base_arn
 
 }
 
-###################################
-# VPC ID
-###################################
+output "bedrock_role_arn" {
 
-output "vpc_id" {
-
-  description = "AWS VPC ID"
-
-  value = aws_vpc.main.id
+  value = aws_iam_role.bedrock_role.arn
 
 }

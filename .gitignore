@@ -1,5 +1,39 @@
-*.pem
-*.tfstate
-*.tfstate.backup
+# ==========================
+# Terraform
+# ==========================
 .terraform/
+.terraform.lock.hcl
+
+*.tfstate
+*.tfstate.*
+crash.log
+
+# Variables sensibles
 *.tfvars
+
+# ==========================
+# AWS
+# ==========================
+*.pem
+
+# ==========================
+# Lambda
+# ==========================
+lambda.zip
+
+# ==========================
+# Python
+# ==========================
+__pycache__/
+*.pyc
+
+# ==========================
+# Visual Studio Code
+# ==========================
+.vscode/
+
+# ==========================
+# Sistema Operativo
+# ==========================
+.DS_Store
+Thumbs.db

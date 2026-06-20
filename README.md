@@ -176,6 +176,6 @@ Próximos pasos:
 
 # Autor
 
-Oscar Alexander López Cobo
+Oscar López Cobo
 
 Proyecto académico de Arquitectura Cloud utilizando Amazon Web Services (AWS).

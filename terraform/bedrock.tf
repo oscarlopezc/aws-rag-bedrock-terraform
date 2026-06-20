@@ -1,6 +1,7 @@
 ############################################
 # IAM Role - Amazon Bedrock Knowledge Base
 ############################################
+data "aws_caller_identity" "current" {}
 
 resource "aws_iam_role" "bedrock_role" {
 
@@ -8,27 +9,45 @@ resource "aws_iam_role" "bedrock_role" {
 
   assume_role_policy = jsonencode({
 
-    Version = "2012-10-17"
+  Version = "2012-10-17"
 
-    Statement = [
+  Statement = [
 
-      {
+    {
 
-        Effect = "Allow"
+      Sid = "AmazonBedrockKnowledgeBaseTrust"
 
-        Principal = {
+      Effect = "Allow"
 
-          Service = "bedrock.amazonaws.com"
+      Principal = {
 
-        }
-
-        Action = "sts:AssumeRole"
+        Service = "bedrock.amazonaws.com"
 
       }
 
-    ]
+      Action = "sts:AssumeRole"
 
-  })
+      Condition = {
+
+        StringEquals = {
+
+          "aws:SourceAccount" = data.aws_caller_identity.current.account_id
+
+        }
+
+        ArnLike = {
+
+          "aws:SourceArn" = "arn:aws:bedrock:${var.aws_region}:${data.aws_caller_identity.current.account_id}:knowledge-base/*"
+
+        }
+
+      }
+
+    }
+
+  ]
+
+})
 
   tags = local.common_tags
 
@@ -48,14 +67,14 @@ resource "aws_iam_policy" "bedrock_policy" {
     Statement = [
 
       {
-
-        Sid = "InvokeEmbeddingModel"
+        Sid    = "InvokeEmbeddingModel"
 
         Effect = "Allow"
 
         Action = [
 
-          "bedrock:InvokeModel"
+          "bedrock:InvokeModel",
+          "bedrock:ListFoundationModels"
 
         ]
 
@@ -64,15 +83,13 @@ resource "aws_iam_policy" "bedrock_policy" {
       },
 
       {
-
-        Sid = "ReadDatasource"
+        Sid    = "ReadDatasource"
 
         Effect = "Allow"
 
         Action = [
 
           "s3:GetObject",
-
           "s3:ListBucket"
 
         ]
@@ -80,7 +97,6 @@ resource "aws_iam_policy" "bedrock_policy" {
         Resource = [
 
           aws_s3_bucket.datasource.arn,
-
           "${aws_s3_bucket.datasource.arn}/*"
 
         ]
@@ -88,8 +104,7 @@ resource "aws_iam_policy" "bedrock_policy" {
       },
 
       {
-
-        Sid = "ReadSecrets"
+        Sid    = "ReadSecrets"
 
         Effect = "Allow"
 
@@ -108,18 +123,18 @@ resource "aws_iam_policy" "bedrock_policy" {
   })
 
 }
+
 ############################################
 # Attach Policy
 ############################################
 
 resource "aws_iam_role_policy_attachment" "bedrock_policy_attach" {
 
-  role = aws_iam_role.bedrock_role.name
+  role       = aws_iam_role.bedrock_role.name
 
   policy_arn = aws_iam_policy.bedrock_policy.arn
 
 }
-
 
 ############################################
 # Amazon Bedrock Knowledge Base

@@ -27,10 +27,6 @@ variable "context" {
   type        = string
 }
 
-variable "knowledge_base_id" {
-  description = "Amazon Bedrock Knowledge Base ID"
-  type        = string
-}
 
 variable "model_id" {
   description = "Foundation Model ID"

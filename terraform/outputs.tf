@@ -70,3 +70,16 @@ output "bedrock_role_arn" {
   value = aws_iam_role.bedrock_role.arn
 
 }
+
+
+############################################
+# CI/CD Outputs
+############################################
+
+output "cloudfront_distribution_id" {
+
+  description = "CloudFront Distribution ID"
+
+  value = aws_cloudfront_distribution.frontend.id
+
+}

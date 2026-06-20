@@ -25,7 +25,7 @@ resource "aws_lambda_function" "api" {
     variables = {
 
       CONTEXT           = var.context
-      KNOWLEDGE_BASE_ID = var.knowledge_base_id
+      KNOWLEDGE_BASE_ID = awscc_bedrock_knowledge_base.knowledge_base.id
       MODEL_ID          = var.model_id
       TEMPERATURE       = var.temperature
 

@@ -15,8 +15,6 @@ resource "aws_iam_role" "bedrock_role" {
 
     {
 
-      Sid = "AmazonBedrockKnowledgeBaseTrust"
-
       Effect = "Allow"
 
       Principal = {
@@ -74,7 +72,8 @@ resource "aws_iam_policy" "bedrock_policy" {
         Action = [
 
           "bedrock:InvokeModel",
-          "bedrock:ListFoundationModels"
+          "bedrock:ListFoundationModels",
+          "bedrock:ListCustomModels"
 
         ]
 
@@ -136,13 +135,33 @@ resource "aws_iam_role_policy_attachment" "bedrock_policy_attach" {
 
 }
 
+
+############################################
+# Wait for IAM Propagation
+############################################
+
+resource "time_sleep" "wait_for_iam" {
+
+  depends_on = [
+    aws_iam_role_policy_attachment.bedrock_policy_attach
+  ]
+
+  create_duration = "30s"
+
+}
+
 ############################################
 # Amazon Bedrock Knowledge Base
 ############################################
 
 resource "awscc_bedrock_knowledge_base" "knowledge_base" {
 
-  name = var.knowledge_base_name
+  depends_on = [
+    time_sleep.wait_for_iam,
+    aws_secretsmanager_secret_version.pinecone_api_key
+  ]
+
+  name        = var.knowledge_base_name
 
   description = var.knowledge_base_description
 
@@ -176,7 +195,7 @@ resource "awscc_bedrock_knowledge_base" "knowledge_base" {
 
         metadata_field = "AMAZON_BEDROCK_METADATA"
 
-        text_field = "content"
+        text_field     = "content"
 
       }
 

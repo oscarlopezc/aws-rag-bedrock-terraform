@@ -1,146 +1,151 @@
-name: CI-CD Pipeline (Build, Push, Deploy)
+name: AWS Serverless RAG Deployment
 
 on:
   push:
     branches:
-      - feature
       - main
 
-jobs:
+permissions:
+  contents: read
+  id-token: write
 
-  # ================= CI =================
-  build:
+concurrency:
+  group: aws-rag-deployment
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+
     runs-on: ubuntu-latest
 
+    env:
+      AWS_REGION: us-east-1
+      TF_WORKING_DIR: terraform
+      LAMBDA_DIR: app/lambda
+      FRONTEND_DIR: app/frontend
+
     steps:
+
+      ###############################################################
+      # Checkout Repository
+      ###############################################################
+
       - name: Checkout Repository
         uses: actions/checkout@v4
+
+      ###############################################################
+      # Configure AWS Credentials
+      ###############################################################
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
+          aws-region: us-east-1
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Login to Amazon ECR
-        uses: aws-actions/amazon-ecr-login@v2
+      ###############################################################
+      # Setup Terraform
+      ###############################################################
 
-      # -------- BACKEND --------
-      - name: Build Backend Image
-        run: docker build -t sre-backend ./app/backend
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
 
-      - name: Tag Backend Image
-        run: docker tag sre-backend:latest 211125724309.dkr.ecr.us-east-1.amazonaws.com/sre-backend:latest
+      ###############################################################
+      # Setup Python
+      ###############################################################
 
-      - name: Push Backend Image
-        run: docker push 211125724309.dkr.ecr.us-east-1.amazonaws.com/sre-backend:latest
-
-      # -------- FRONTEND --------
-      - name: Build Frontend Image
-        run: docker build -t sre-frontend ./app/frontend
-
-      - name: Tag Frontend Image
-        run: docker tag sre-frontend:latest 211125724309.dkr.ecr.us-east-1.amazonaws.com/sre-frontend:latest
-
-      - name: Push Frontend Image
-        run: docker push 211125724309.dkr.ecr.us-east-1.amazonaws.com/sre-frontend:latest
-
-
-  # ================= CD DEV =================
-  deploy-dev:
-    if: github.ref == 'refs/heads/feature'
-    needs: build
-    runs-on: ubuntu-latest
-    environment: dev
-
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Copy docker-compose.yml
-        uses: appleboy/scp-action@v0.1.7
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ubuntu
-          key: ${{ secrets.EC2_SSH_KEY }}
-          source: "docker-compose.yml"
-          target: "/home/ubuntu/app/"
+          python-version: "3.13"
 
-      - name: Deploy DEV to EC2
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ubuntu
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            set -e
+      ###############################################################
+      # Build Lambda Package
+      ###############################################################
 
-            echo "Logging into ECR..."
-            aws ecr get-login-password --region us-east-1 \
-              | docker login --username AWS --password-stdin 211125724309.dkr.ecr.us-east-1.amazonaws.com
+      - name: Build Lambda Package
+        working-directory: ${{ env.LAMBDA_DIR }}
+        run: |
+          zip -r ../../terraform/lambda.zip .
 
-            echo "Checking Docker Compose..."
-            docker compose version
+      ###############################################################
+      # Terraform Init
+      ###############################################################
 
-            mkdir -p /home/ubuntu/app
-            cd /home/ubuntu/app
+      - name: Terraform Init
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform init -input=false
 
-            echo "Pulling images..."
-            docker compose pull
+      ###############################################################
+      # Terraform Validate
+      ###############################################################
 
-            echo "Stopping containers..."
-            docker compose down || true
+      - name: Terraform Validate
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform validate
 
-            echo "Starting containers..."
-            docker compose up -d
+      ###############################################################
+      # Terraform Plan
+      ###############################################################
 
+      - name: Terraform Plan
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform plan -input=false
 
-  # ================= CD PROD =================
-  deploy-prod:
-    if: github.ref == 'refs/heads/main'
-    needs: build
-    runs-on: ubuntu-latest
-    environment: production
+      ###############################################################
+      # Terraform Apply
+      ###############################################################
 
-    steps:
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main'
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform apply -auto-approve -input=false
 
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      ###############################################################
+      # Read Terraform Outputs
+      ###############################################################
 
-      - name: Copy docker-compose.yml
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ubuntu
-          key: ${{ secrets.EC2_SSH_KEY }}
-          source: "docker-compose.yml"
-          target: "/home/ubuntu/app/"
+      - name: Read Terraform Outputs
+        id: terraform
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          echo "frontend_bucket=$(terraform output -raw frontend_bucket)" >> $GITHUB_OUTPUT
+          echo "cloudfront_distribution=$(terraform output -raw cloudfront_distribution_id)" >> $GITHUB_OUTPUT
+          echo "api_gateway=$(terraform output -raw api_gateway_url)" >> $GITHUB_OUTPUT
 
-      - name: Deploy PROD to EC2
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ubuntu
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            set -e
+      ###############################################################
+      # Upload Frontend
+      ###############################################################
 
-            echo "Logging into ECR..."
-            aws ecr get-login-password --region us-east-1 \
-              | docker login --username AWS --password-stdin 211125724309.dkr.ecr.us-east-1.amazonaws.com
+      - name: Deploy Frontend to Amazon S3
+        run: |
+          aws s3 sync \
+            ${{ env.FRONTEND_DIR }} \
+            s3://${{ steps.terraform.outputs.frontend_bucket }} \
+            --delete
 
-            echo "Checking Docker Compose..."
-            docker compose version
+      ###############################################################
+      # CloudFront Cache Invalidation
+      ###############################################################
 
-            mkdir -p /home/ubuntu/app
-            cd /home/ubuntu/app
+      - name: Invalidate CloudFront Cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ steps.terraform.outputs.cloudfront_distribution }} \
+            --paths "/*"
 
-            echo "Pulling images..."
-            docker compose pull
+      ###############################################################
+      # Deployment Summary
+      ###############################################################
 
-            echo "Stopping containers..."
-            docker compose down || true
-
-            echo "Starting containers..."
-            docker compose up -d
+      - name: Deployment Summary
+        run: |
+          echo "## 🚀 Deployment Completed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Resource | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Region | ${{ env.AWS_REGION }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend Bucket | ${{ steps.terraform.outputs.frontend_bucket }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| CloudFront Distribution | ${{ steps.terraform.outputs.cloudfront_distribution }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| API Gateway | ${{ steps.terraform.outputs.api_gateway }} |" >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>AWS RAG Assistant</title>
+
+    <link rel="stylesheet" href="style.css">
+
+</head>
+
+<body>
+
+    <div class="container">
+
+        <header>
+
+            <h1>🤖 AWS RAG Assistant</h1>
+
+            <p>Amazon Bedrock + Pinecone + Terraform</p>
+
+        </header>
+
+        <main id="chat"></main>
+
+        <div class="input-area">
+
+            <textarea
+                id="question"
+                placeholder="Escribe tu pregunta..."
+            ></textarea>
+
+            <button onclick="sendQuestion()">
+                Enviar
+            </button>
+
+        </div>
+
+    </div>
+
+    <script src="app.js"></script>
+
+</body>
+
+</html>

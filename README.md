@@ -178,4 +178,4 @@ Próximos pasos:
 
 Oscar López Cobo
 
-Proyecto académico de Arquitectura Cloud utilizando Amazon Web Services (AWS).
+Proyecto académico de Arquitectura Cloud utilizando  (AWS).

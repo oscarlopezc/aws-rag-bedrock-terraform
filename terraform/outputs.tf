@@ -49,20 +49,17 @@ output "datasource_bucket" {
   description = "Knowledge Base Data Source Bucket"
   value       = aws_s3_bucket.datasource.bucket
 }
+
 ############################################
 # Bedrock Outputs
 ############################################
 
 output "knowledge_base_id" {
-
   value = awscc_bedrock_knowledge_base.knowledge_base.id
-
 }
 
 output "knowledge_base_arn" {
-
   value = awscc_bedrock_knowledge_base.knowledge_base.knowledge_base_arn
-
 }
 
 output "bedrock_role_arn" {

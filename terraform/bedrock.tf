@@ -194,7 +194,7 @@ resource "awscc_bedrock_knowledge_base" "knowledge_base" {
        text_field     = "text"
 
       metadata_field = "metadata"
-      
+
       }
 
     }

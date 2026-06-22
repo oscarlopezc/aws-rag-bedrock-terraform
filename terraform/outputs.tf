@@ -54,13 +54,13 @@ output "datasource_bucket" {
 # Bedrock Outputs
 ############################################
 
-output "knowledge_base_id" {
-  value = awscc_bedrock_knowledge_base.knowledge_base.id
-}
+#output "knowledge_base_id" {
+ # value = awscc_bedrock_knowledge_base.knowledge_base.id
+#}
 
-output "knowledge_base_arn" {
-  value = awscc_bedrock_knowledge_base.knowledge_base.knowledge_base_arn
-}
+#output "knowledge_base_arn" {
+ # value = awscc_bedrock_knowledge_base.knowledge_base.knowledge_base_arn
+#}
 
 output "bedrock_role_arn" {
 

@@ -54,6 +54,6 @@ variable "knowledge_base_name" {
 
 variable "knowledge_base_description" {
   type    = string
-  default = "Knowledge Base para RAG con Amazon Bedrock"
+  default = "Knowledge Base para RAG"
 }
 

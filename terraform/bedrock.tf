@@ -230,22 +230,90 @@ resource "time_sleep" "wait_for_iam" {
 
     #}
 #  }
- # vector_ingestion_configuration = {
-
-  #  chunking_configuration = {
-
-   #   chunking_strategy = "FIXED_SIZE"
-
-    #  fixed_size_chunking_configuration = {
-
-     #   max_tokens = 300
-
-      #  overlap_percentage = 20
-
-      #}
-
-    #}
-
-  #}
-
+ # 
 #}
+
+############################################
+# Amazon Bedrock Knowledge Base
+############################################
+
+resource "awscc_bedrock_knowledge_base" "knowledge_base" {
+
+  depends_on = [
+    time_sleep.wait_for_iam,
+    aws_secretsmanager_secret_version.pinecone_api_key
+  ]
+
+  name        = var.knowledge_base_name
+
+  description = var.knowledge_base_description
+
+  role_arn = aws_iam_role.bedrock_role.arn
+
+  knowledge_base_configuration = {
+
+    type = "VECTOR"
+
+    vector_knowledge_base_configuration = {
+
+      embedding_model_arn = "arn:aws:bedrock:us-east-1::foundation-model/amazon.titan-embed-text-v2:0"
+
+    }
+
+  }
+
+  storage_configuration = {
+
+    type = "PINECONE"
+
+    pinecone_configuration = {
+
+      connection_string = var.pinecone_host
+
+      credentials_secret_arn = aws_secretsmanager_secret.pinecone_api_key.arn
+
+      field_mapping = {
+
+        text_field     = "text"
+        metadata_field = "metadata"
+
+      }
+
+    }
+
+  }
+
+ # tags = local.common_tags
+
+}
+
+############################################
+# Bedrock Data Source (S3)
+############################################
+
+resource "awscc_bedrock_data_source" "datasource" {
+
+  knowledge_base_id = awscc_bedrock_knowledge_base.knowledge_base.id
+
+  name = "${var.project_name}-${var.environment}-datasource"
+
+  description = "S3 Data Source for RAG"
+
+  data_deletion_policy = "DELETE"
+
+  data_source_configuration = {
+
+    type = "S3"
+
+    s3_configuration = {
+
+      bucket_arn = aws_s3_bucket.datasource.arn
+      inclusion_prefixes = [
+       "/"
+      ]
+
+    }
+
+  }
+
+}

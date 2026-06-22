@@ -25,7 +25,7 @@ jobs:
       FRONTEND_DIR: app/frontend
       
       TF_VAR_context: ${{ secrets.TF_VAR_CONTEXT }}
-      TF_VAR_model_id: ${{ secrets.TF_VAR_MODEL_ID }}
+      TF_VAR_model_arn: ${{ secrets.TF_VAR_MODEL_ARN }}
       TF_VAR_pinecone_api_key: ${{ secrets.TF_VAR_PINECONE_API_KEY }}
       TF_VAR_pinecone_host: ${{ secrets.TF_VAR_PINECONE_HOST }}
 

@@ -189,14 +189,12 @@ resource "awscc_bedrock_knowledge_base" "knowledge_base" {
 
       credentials_secret_arn = aws_secretsmanager_secret.pinecone_api_key.arn
 
-      namespace = ""
-
       field_mapping = {
 
-        metadata_field = "AMAZON_BEDROCK_METADATA"
+       text_field     = "text"
 
-        text_field     = "content"
-
+      metadata_field = "metadata"
+      
       }
 
     }

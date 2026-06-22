@@ -196,8 +196,6 @@ No changes. Your infrastructure matches the configuration.
 * El proyecto incluye un flujo de despliegue automatizado utilizando GitHub Actions.
 
 
----
-
 # Estado del proyecto
 
 **Proyecto funcional** ✅
@@ -218,6 +216,6 @@ Características implementadas:
 
 # Autor
 
-**Oscar López Cobo**
+**Oscar López**
 
 Arquitectura Cloud | AWS | Terraform | Amazon Bedrock | Serverless | Inteligencia Artificial Generativa

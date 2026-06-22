@@ -245,7 +245,6 @@ resource "awscc_bedrock_knowledge_base" "knowledge_base" {
   ]
 
   name        = var.knowledge_base_name
-
   description = var.knowledge_base_description
 
   role_arn = aws_iam_role.bedrock_role.arn
@@ -283,7 +282,13 @@ resource "awscc_bedrock_knowledge_base" "knowledge_base" {
 
   }
 
- # tags = local.common_tags
+  lifecycle {
+    ignore_changes = [
+      description
+    ]
+  }
+
+  # tags = local.common_tags
 
 }
 
@@ -308,12 +313,20 @@ resource "awscc_bedrock_data_source" "datasource" {
     s3_configuration = {
 
       bucket_arn = aws_s3_bucket.datasource.arn
+
       inclusion_prefixes = [
-       "/"
+        "/"
       ]
 
     }
 
+  }
+
+  lifecycle {
+    ignore_changes = [
+      description,
+      data_source_configuration
+    ]
   }
 
 }

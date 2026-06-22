@@ -41,7 +41,7 @@ resource "aws_iam_policy" "lambda_bedrock_policy" {
 
   name        = "${local.lambda_name}-bedrock-policy"
 
-  description = "Allow Lambda to query Amazon Bedrock Knowledge Bases"
+  description = "Allow Lambda to invoke Amazon Bedrock RetrieveAndGenerate"
 
   policy = jsonencode({
 

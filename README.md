@@ -1,22 +1,24 @@
-# 🚀 AWS RAG with Amazon Bedrock, Pinecone and Terraform
+# AWS RAG con Amazon Bedrock, Pinecone y Terraform
 
-Repositorio para el despliegue de una arquitectura **Retrieval-Augmented Generation (RAG)** utilizando **Amazon Bedrock**, **Amazon S3**, **Pinecone**, **AWS Lambda**, **API Gateway**, **CloudFront** y **Terraform**.
+Repositorio para el despliegue de una solución **Retrieval-Augmented Generation (RAG)** utilizando **Amazon Bedrock**, **Amazon S3**, **Amazon API Gateway**, **AWS Lambda**, **Amazon CloudFront**, **Pinecone** y **Terraform**.
+
+La aplicación permite cargar documentos en Amazon S3, indexarlos en una **Knowledge Base de Amazon Bedrock** respaldada por **Pinecone** y realizar consultas desde una aplicación web mediante modelos de Inteligencia Artificial Generativa.
 
 ---
 
 # Arquitectura
 
-```
+```text
 Usuario
     │
     ▼
 CloudFront
     │
     ▼
-S3 (Frontend)
+Amazon S3 (Frontend)
     │
     ▼
-API Gateway
+Amazon API Gateway
     │
     ▼
 AWS Lambda (Python)
@@ -32,7 +34,7 @@ Knowledge Base
 Pinecone Vector Database
     ▲
     │
-S3 Data Source
+Amazon S3 Data Source
 (PDF, DOCX, TXT...)
 ```
 
@@ -40,23 +42,24 @@ S3 Data Source
 
 # Tecnologías utilizadas
 
-- Terraform
-- Amazon Bedrock
-- Amazon Bedrock Knowledge Base
-- AWS Lambda
-- Amazon API Gateway
-- Amazon S3
-- Amazon CloudFront
-- AWS IAM
-- AWS Secrets Manager
-- Pinecone
-- Python 3.13
+* Terraform
+* Amazon Bedrock
+* Amazon Bedrock Knowledge Base
+* Amazon Titan Embeddings V2
+* Amazon Nova Lite (Inference Profile)
+* AWS Lambda (Python 3.13)
+* Amazon API Gateway
+* Amazon CloudFront
+* Amazon S3
+* AWS IAM
+* AWS Secrets Manager
+* Pinecone
 
 ---
 
 # Estructura del proyecto
 
-```
+```text
 Proyecto_aws-rag-bedrock-terraform/
 
 ├── app/
@@ -79,49 +82,53 @@ Proyecto_aws-rag-bedrock-terraform/
 │   ├── variables.tf
 │   └── versions.tf
 │
+├── .github/
+│   └── workflows/
+│
 ├── .gitignore
 └── README.md
 ```
 
 ---
 
-# Infraestructura
+# Infraestructura desplegada
 
-La infraestructura es desplegada completamente mediante Terraform e incluye:
+Terraform aprovisiona automáticamente:
 
-- Amazon Bedrock Knowledge Base
-- Pinecone como Vector Store
-- Amazon S3 para almacenamiento de documentos
-- Amazon S3 para el Frontend
-- AWS Lambda
-- Amazon API Gateway
-- Amazon CloudFront
-- AWS Secrets Manager
-- IAM Roles y Policies
+* Amazon S3 para el Frontend
+* Amazon S3 para el almacenamiento de documentos
+* Amazon CloudFront
+* Amazon API Gateway
+* AWS Lambda
+* AWS IAM (Roles y Policies)
+* AWS Secrets Manager
+* Amazon Bedrock Knowledge Base
+* Amazon Bedrock Data Source
+* Pinecone como Vector Store
 
 ---
 
 # Flujo RAG
 
-1. El usuario envía una pregunta desde el Frontend.
-2. API Gateway recibe la solicitud.
-3. Lambda invoca Amazon Bedrock.
-4. Bedrock consulta la Knowledge Base.
-5. La Knowledge Base recupera información desde Pinecone.
-6. Claude 3.5 Sonnet genera la respuesta.
+1. El usuario realiza una pregunta desde el Frontend.
+2. Amazon API Gateway recibe la solicitud.
+3. AWS Lambda invoca la operación **RetrieveAndGenerate** de Amazon Bedrock.
+4. Amazon Bedrock consulta la Knowledge Base.
+5. La Knowledge Base recupera la información relevante desde Pinecone.
+6. El modelo de lenguaje genera una respuesta utilizando el contexto recuperado.
 7. Lambda devuelve la respuesta al Frontend.
 
 ---
 
 # Requisitos
 
-- Terraform >= 1.11
-- AWS CLI
-- Cuenta AWS
-- Pinecone
-- Amazon Bedrock habilitado
-- Modelo Claude 3.5 Sonnet habilitado
-- Modelo Titan Embeddings habilitado
+* Terraform >= 1.11
+* AWS CLI
+* Cuenta de AWS
+* Cuenta de Pinecone
+* Amazon Bedrock habilitado
+* Modelo Amazon Titan Embeddings V2
+* Un Inference Profile habilitado (por ejemplo Amazon Nova Lite Global)
 
 ---
 
@@ -133,19 +140,19 @@ Inicializar Terraform
 terraform init
 ```
 
-Validar configuración
+Validar la configuración
 
 ```bash
 terraform validate
 ```
 
-Visualizar cambios
+Visualizar los cambios
 
 ```bash
 terraform plan
 ```
 
-Desplegar infraestructura
+Desplegar la infraestructura
 
 ```bash
 terraform apply
@@ -153,29 +160,64 @@ terraform apply
 
 ---
 
-# Destruir infraestructura
+# Configuración manual de Amazon Bedrock
 
-```bash
-terraform destroy
+Después del primer despliegue con Terraform es necesario realizar una configuración manual en Amazon Bedrock.
+
+## ¿Por qué es necesario?
+
+Actualmente el proveedor **AWS Cloud Control (`awscc`)** utilizado por Terraform no administra completamente el ciclo de vida de las **Knowledge Bases de Amazon Bedrock**. Algunos atributos y configuraciones internas no son sincronizados correctamente, lo que puede provocar que Terraform intente modificar o recrear recursos que ya existen.
+
+Para evitar este comportamiento, la configuración inicial se realiza una única vez desde la consola de AWS y posteriormente Terraform mantiene el estado de la infraestructura sin generar cambios innecesarios.
+
+## Pasos
+
+1. Ingresar a **Amazon Bedrock → Knowledge Bases**.
+2. Verificar la Knowledge Base creada por Terraform.
+3. Configurar el **Data Source** asociado al bucket de Amazon S3.
+4. Ejecutar la sincronización del Data Source.
+5. Verificar que los documentos fueron indexados correctamente.
+6. Configurar el **Inference Profile** que utilizará la función Lambda para generar las respuestas.
+
+Una vez completados estos pasos, las siguientes ejecuciones de Terraform deberán mostrar:
+
+```text
+No changes. Your infrastructure matches the configuration.
 ```
+
+---
+
+# Notas importantes
+
+* Los documentos cargados en Amazon S3 son indexados automáticamente en Pinecone mediante la Knowledge Base.
+* La función Lambda utiliza la operación **RetrieveAndGenerate** de Amazon Bedrock.
+* Los modelos más recientes de Amazon Bedrock requieren el uso de un **Inference Profile**, por lo que no es posible invocar directamente algunos modelos Foundation.
+* La configuración de CORS del API Gateway es administrada mediante Terraform.
+* El proyecto incluye un flujo de despliegue automatizado utilizando GitHub Actions.
+
 
 ---
 
 # Estado del proyecto
 
-En desarrollo 🚧
+**Proyecto funcional** ✅
 
-Próximos pasos:
+Características implementadas:
 
-- Desarrollo de la función Lambda
-- Desarrollo del Frontend
-- Integración completa con Amazon Bedrock
-- Automatización mediante GitHub Actions
+* Infraestructura como código (Terraform)
+* Frontend estático en Amazon S3
+* Distribución mediante Amazon CloudFront
+* API REST con Amazon API Gateway
+* Backend Serverless con AWS Lambda
+* Integración con Amazon Bedrock
+* Base de conocimiento utilizando Pinecone
+* Consulta de documentos mediante RAG
+* Despliegue automatizado con GitHub Actions
 
 ---
 
 # Autor
 
-Oscar López Cobo
+**Oscar López Cobo**
 
-Proyecto  Arquitectura Cloud utilizando  (AWS).
+Arquitectura Cloud | AWS | Terraform | Amazon Bedrock | Serverless | Inteligencia Artificial Generativa

@@ -28,9 +28,8 @@ variable "context" {
 }
 
 
-variable "model_id" {
-  description = "Foundation Model ID"
-  type        = string
+variable "model_arn" {
+  type = string
 }
 
 variable "temperature" {

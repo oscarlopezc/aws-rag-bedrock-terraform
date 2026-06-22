@@ -39,9 +39,9 @@ resource "aws_iam_role_policy_attachment" "lambda_basic_execution" {
 
 resource "aws_iam_policy" "lambda_bedrock_policy" {
 
-  name = "${local.lambda_name}-bedrock-policy"
+  name        = "${local.lambda_name}-bedrock-policy"
 
-  description = "Allow Lambda to invoke Amazon Bedrock RetrieveAndGenerate"
+  description = "Allow Lambda to query Amazon Bedrock Knowledge Bases"
 
   policy = jsonencode({
 
@@ -55,8 +55,10 @@ resource "aws_iam_policy" "lambda_bedrock_policy" {
 
         Action = [
 
-          "bedrock:RetrieveAndGenerate"
-
+          "bedrock:Retrieve",
+          "bedrock:RetrieveAndGenerate",
+          "bedrock:InvokeModel",
+          "bedrock:GetInferenceProfile"
         ]
 
         Resource = "*"

@@ -1,4 +1,4 @@
-const API_URL = "";
+const API_URL = "https://d2usope9sbbll1.cloudfront.net/";
 
 const chat = document.getElementById("chat");
 
